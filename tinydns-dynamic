@@ -87,7 +87,8 @@ def main():
       except: print "ERROR: Unable to overwrite data file"
 
       # now run the tinydns-data prog
-      if (os.system("tinydns-data") == -1):
+
+      if (os.system("cd %s; tinydns-data" % options.data_dir) == -1):
         print "ERROR: Unable to execute tinydns-data program"
 
     # invalid hostname
