@@ -68,12 +68,14 @@ def main():
       except: print "ERROR: Unable to open tinydns data file"
 
       for line in data_file:
-        if line.startswith("+%s:" % (ddns_hostname)):
-          host, ip, ttl = line.split(':',2)
+        if line.startswith("+%s" % ddns_hostname):
+          host = "+%s" % ddns_hostname
           ip = addr[0]
           ttl = '300'
           line = ':'.join([host,ip,ttl])
-        data_tmp_file.write(line)
+          data_tmp_file.write("%s\n" % line)
+        else:
+          data_tmp_file.write(line)
 
       data_file.close()
       data_tmp_file.close()
