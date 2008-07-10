@@ -66,6 +66,8 @@ def main():
       except: print "ERROR: Unable to create temporary data file"
       try: data_file = open(data_path,"r")
       except: print "ERROR: Unable to open tinydns data file"
+      
+      os.chdir(options.data_dir)
 
       for line in data_file:
         if line.startswith("+%s" % ddns_hostname):
@@ -88,7 +90,7 @@ def main():
 
       # now run the tinydns-data prog
 
-      if (os.system("cd %s; tinydns-data" % options.data_dir) == -1):
+      if (os.system("tinydns-data") == -1):
         print "ERROR: Unable to execute tinydns-data program"
 
     # invalid hostname
