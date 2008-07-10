@@ -22,7 +22,7 @@ import shutil
 import socket
 from optparse import OptionParser
 
-DDNSPORT = 9000
+DDNSPORT = 9
 
 def main():
   usage = "usage: %prog [options] password"
