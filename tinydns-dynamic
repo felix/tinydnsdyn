@@ -22,8 +22,6 @@ import shutil
 import socket
 from optparse import OptionParser
 
-DDNSPORT = 9
-
 def main():
   usage = "usage: %prog [options] password"
   parser = OptionParser(usage=usage)
@@ -35,9 +33,11 @@ def main():
       help="[client] your desired DDNS hostname")
   parser.add_option("-r", "--remote-server", dest="ddns_server",
       help="[client] the DDNS server hostname")
+  parser.add_option("-p", "--port", dest="ddns_port",
+      help="the port to use")
   parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
       help="be noisy")
-  parser.set_defaults(data_dir="/var/services/tinydns/root", verbose=False)
+  parser.set_defaults(data_dir="/var/services/tinydns/root", verbose=False, ddns_port=5300)
   (options, args) = parser.parse_args()
   if len(args) != 1:
     parser.error("No password specified")
@@ -100,8 +100,8 @@ def main():
 
   if options.server:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(("",DDNSPORT))
-    print "Server started on port", DDNSPORT
+    sock.bind(("",options.ddns_port))
+    print "Server started on port", options.ddns_port
     while 1:
       # receive data from client
       data, addr = sock.recvfrom(1024)
@@ -110,7 +110,7 @@ def main():
   else:
     # create and connect the socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.sendto(options.ddns_hostname, (options.ddns_server,DDNSPORT))
+    sock.sendto(options.ddns_hostname, (options.ddns_server,options.ddns_port))
 
 if __name__ == "__main__":
   main()
