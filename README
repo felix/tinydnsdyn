@@ -1,0 +1,31 @@
+This is a basic dynamic client and server for the djbdns DNS 
+server 'tinydns' by Dan Bernstein.
+
+REQUIREMENTS:
+
+* Administrative access to a server running tinydns
+* Administrative access to a unix box behind your NAT router
+* Python install on both client and server
+
+INSTALLATION
+
+To install the server code:
+
+1. Copy script and all files onto your server ie. /etc/tinydns-dynamic/
+2. The supplied 'run' script is tailored for debian/ubuntu and may need to be changed. Also true for the 'log/run' script
+3. Ensure the password is updated in the 'run' file
+4. Symlink this directory into your svscan directory,
+   (i.e. "ln $(pwd) /etc/service/" )
+
+To install the client code:
+
+1. Copy the 'tinydns-dynamic' script into your DNS client's path ie. /usr/local/bin/
+2. Arrange to periodically run the "ddnsclient" program (via cron et al) as:
+
+   tinydns-dynamic --hostname=<myhostname> --remote-server=<mydnsserver> <password>
+
+3. The password must obviously be the same
+
+
+I take no responsibility for anything that may happen to any of your machines.
+That said, let me know if there are any issues.

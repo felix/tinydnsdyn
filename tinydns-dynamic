@@ -1,0 +1,112 @@
+#!/usr/bin/python
+
+# Copyright 2008 Felix McCoey <felix.mccoey@gmail.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2, as 
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301  USA
+*/
+
+
+import os
+import shutil
+import socket
+from optparse import OptionParser
+
+DDNSPORT = 9000
+
+def main():
+  usage = "usage: %prog [options] password"
+  parser = OptionParser(usage=usage)
+  parser.add_option("-s", "--server", action="store_true", dest="server",
+      help="act as aserver, otherwise be a client")
+  parser.add_option("-d", "--data-dir", dest="data_dir",
+      help="[server] absolute path to the tinydns data directory")
+  parser.add_option("-n", "--hostname", dest="ddns_hostname",
+      help="[client] your desired DDNS hostname")
+  parser.add_option("-r", "--remote-server", dest="ddns_server",
+      help="[client] the DDNS server hostname")
+  parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
+      help="be noisy")
+  parser.set_defaults(data_dir="/var/services/tinydns/root", verbose=False)
+  (options, args) = parser.parse_args()
+  if len(args) != 1:
+    parser.error("No password specified")
+
+  def validDDNSRequest(ddns_hostname):
+    if options.verbose: print "Testing hostname '%s'" % ddns_hostname
+    dynamic_path = os.path.join(options.data_dir, "dynamic")
+    try: dynamic_file = open(dynamic_path,"r")
+    except: print "ERROR: Unable to open dynamic host file"
+    # test for the hostname in dynamic file
+    valid = False
+    for dline in dynamic_file:
+      if dline.strip() == ddns_hostname.strip():
+        if options.verbose: print "'%s' is a valid hostname request" % ddns_hostname
+        valid = True
+    dynamic_file.close()
+    return valid
+
+  def processDDNSRequest(addr, ddns_hostname):
+    if options.verbose: print "Client %s requested name '%s'" % (addr[0],ddns_hostname)
+
+    if validDDNSRequest(ddns_hostname):
+      data_tmp_path = os.path.join(options.data_dir, "data.tmp")
+      data_path = os.path.join(options.data_dir, "data")
+      try: data_tmp_file = open(data_tmp_path,"w")
+      except: print "ERROR: Unable to create temporary data file"
+      try: data_file = open(data_path,"r")
+      except: print "ERROR: Unable to open tinydns data file"
+
+      for line in data_file:
+        if line.startswith("+%s:" % (ddns_hostname)):
+          host, ip, ttl = line.split(':',2)
+          ip = addr[0]
+          ttl = '300'
+          line = ':'.join([host,ip,ttl])
+        data_tmp_file.write(line)
+
+      data_file.close()
+      data_tmp_file.close()
+      
+      # now overwrite data file with temp one
+      try:
+        shutil.move(data_tmp_path, data_path)
+        print "SUCCESS: %s = %s" % (ddns_hostname, addr[0])
+      except: print "ERROR: Unable to overwrite data file"
+
+      # now run the tinydns-data prog
+      if (os.system("tinydns-data") == -1):
+        print "ERROR: Unable to execute tinydns-data program"
+
+    # invalid hostname
+    else:
+      print "FAILED: Invalid hostname request '%s'" % ddns_hostname
+
+
+  if options.server:
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind(("",DDNSPORT))
+    print "Server started on port", DDNSPORT
+    while 1:
+      # receive data from client
+      data, addr = sock.recvfrom(1024)
+      processDDNSRequest(addr,data.lower())
+
+  else:
+    # create and connect the socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(options.ddns_hostname, (options.ddns_server,DDNSPORT))
+
+if __name__ == "__main__":
+  main()
