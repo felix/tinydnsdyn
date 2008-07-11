@@ -12,10 +12,16 @@ INSTALLATION
 To install the server code:
 
 1. Copy script and all files onto your server ie. /etc/tinydns-dynamic/
-2. The supplied 'run' script is tailored for debian/ubuntu and may need to be changed. Also true for the 'log/run' script
+2. The supplied 'run' script is tailored for debian/ubuntu and may need to be
+   changed. Also true for the 'log/run' script
 3. Ensure the password is updated in the 'run' file
 4. Symlink this directory into your svscan directory,
    (i.e. "ln $(pwd) /etc/service/" )
+5. Ensure there is a file called 'dynamic' in same directory as the tinydns 
+   data file. This should contain one host per line. Only these hosts 
+   are able to use DDNS
+6. For each entry in the 'dynamic' file, an existing entry in the tinydns 
+   data file should already exist. This script will NOT add one.
 
 To install the client code:
 
@@ -24,7 +30,8 @@ To install the client code:
 
    tinydns-dynamic --hostname=<myhostname> --remote-server=<mydnsserver> <password>
 
-3. The password must obviously be the same
+3. The password must obviously be the same and the requested host name must
+   exist in the 'data' and 'dynamic' files.
 
 
 I take no responsibility for anything that may happen to any of your machines.
