@@ -117,7 +117,7 @@ def main():
     while 1:
       # receive data from client, "hostname|hash"
       data, addr = sock.recvfrom(1024)
-      rq_hostname, hsh = data.split("|",2)
+      rq_hostname, hsh = data.split("|",1)
 
       if validDDNSRequest(rq_hostname):
         if hsh == createHash(rq_hostname):
