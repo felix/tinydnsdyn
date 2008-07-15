@@ -82,7 +82,7 @@ def main():
       if line.startswith("+%s" % hostname):
         host = "+%s" % hostname
         ip = address
-        ttl = '300'
+        ttl = '60'
         line = ':'.join([host,ip,ttl])
         data_tmp_file.write("%s\n" % line)
       else:
