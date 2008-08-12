@@ -58,7 +58,7 @@ def main():
       if line[0] not in ['+','=','^',"'",'C']:
         data_tmp_file.write(line)
         continue
-      host,old_ip,old_ttl = line.split(":",2)
+      host,old_ip = line.split(":",1)
       # i think these prefixes should all work?!
       if host.lstrip("+=^'C") == hostname:
         if old_ip != address:
