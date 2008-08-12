@@ -17,8 +17,9 @@ To install the server code:
 3. Ensure the password is updated in the 'run' file
 4. Symlink this directory into your svscan directory,
    (i.e. "ln $(pwd) /etc/service/" )
-5. For each entry in the 'dynamic' file, an existing entry in the tinydns 
-   data file should already exist. This script will NOT add one.
+5. An existing entry in the tinydns data file should already exist. 
+   This script will NOT add one. Only those hosts listed 
+   (with prefixes '+=^'C') are able to update their entries.
 
 To install the client code:
 
