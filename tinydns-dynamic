@@ -36,97 +36,75 @@ def main():
       help="[client] the DDNS server hostname")
   parser.add_option("-p", "--port", dest="ddns_port",
       help="the port to use")
-  parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
-      help="be noisy")
-  parser.set_defaults(data_dir="/var/services/tinydns/root", verbose=False, ddns_port=5300)
+  parser.set_defaults(data_dir="/var/services/tinydns/root", ddns_port=5300, ttl=60)
   (options, args) = parser.parse_args()
   if len(args) != 1:
-    parser.error("Supply one password")
+    parser.error("You need to supply a password")
     exit(-1)
   else:
     password = args[0]
 
-  def validDDNSRequest(ddns_hostname):
-    if options.verbose: print "Testing hostname '%s'" % ddns_hostname
-    dynamic_path = os.path.join(options.data_dir, "dynamic")
-    try: dynamic_file = open(dynamic_path,"r")
-    except: 
-      print "ERROR: Unable to open dynamic host file"
-      exit(-1)
-    # test for the hostname in dynamic file
-    valid = False
-    for dline in dynamic_file:
-      if dline.strip() == ddns_hostname.strip():
-        if options.verbose: print "'%s' is a valid hostname request" % ddns_hostname
-        valid = True
-    dynamic_file.close()
-    return valid
-
   def processDDNSRequest(address, hostname):
-    if options.verbose: print "Client %s requested name '%s'" % (address,hostname)
-
-    data_tmp_path = os.path.join(options.data_dir, "data.tmp")
-    data_path = os.path.join(options.data_dir, "data")
+    result = -1
     try: data_tmp_file = open(data_tmp_path,"w")
     except: 
       print "ERROR: Unable to create temporary data file"
       exit(-1)
-    try: data_file = open(data_path,"r")
-    except: 
-      print "ERROR: Unable to open tinydns data file"
-      exit(-1)
-    
-    os.chdir(options.data_dir)
 
     for line in data_file:
-      if line.startswith("+%s" % hostname):
-        host = "+%s" % hostname
-        ip = address
-        ttl = '60'
-        line = ':'.join([host,ip,ttl])
-        data_tmp_file.write("%s\n" % line)
+      host,old_ip,old_ttl = line.split(":",3)
+      # i think these prefixes should all work?!
+      if host.lstrip("+=^'C") == hostname:
+        if old_ip == address:
+          result = 0
+        else:
+          data_tmp_file.write("%s:%s:60\n" % (host,address) )
+          result = 1
       else:
         data_tmp_file.write(line)
-
-    data_file.close()
     data_tmp_file.close()
+    return result
+
     
-    # now overwrite data file with temp one
-    try:
-      shutil.move(data_tmp_path, data_path)
-      print "SUCCESS: %s = %s" % (hostname, address)
-    except: 
-      print "ERROR: Unable to overwrite data file"
-      exit(-1)
-
-    # now run the tinydns-data prog
-    if (os.system("tinydns-data") == -1):
-      print "ERROR: Unable to execute tinydns-data program"
-
   def createHash(hostname):
-    hasher = hashlib.sha1()
-    hasher.update(hostname.strip())
-    hasher.update(password)
-    return hasher.hexdigest()
+    return hashlib.sha1("%s%s" % (hostname.strip(),password)).hexdigest()
 
   # main selection between server and client
   if options.server:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(("",options.ddns_port))
     print "Server started on port", options.ddns_port
+    os.chdir(options.data_dir)
     while 1:
       # receive data from client, "hostname|hash"
       data, addr = sock.recvfrom(1024)
-      rq_hostname, hsh = data.split("|",1)
-
-      if validDDNSRequest(rq_hostname):
-        if hsh == createHash(rq_hostname):
-          processDDNSRequest(addr[0],rq_hostname)
+      rq_hostname, rq_hsh = data.split("|",1)
+      if rq_hsh == createHash(rq_hostname):
+        data_path = os.path.join(options.data_dir, "data")
+        data_tmp_path = os.path.join(options.data_dir, "data.tmp")
+        try: data_file = open(data_path,"r")
+        except: 
+          print "ERROR: Unable to open tinydns data file"
+          exit(-1)
+        result = processDDNSRequest(addr[0],rq_hostname)
+        if result == 1:
+          # now overwrite data file with temp one
+          try:
+            shutil.move(data_tmp_path, data_path)
+            print "CHANGED: %s = %s" % (rq_hostname, addr[0])
+          except: 
+            print "ERROR: Unable to overwrite data file"
+          # now run the tinydns-data prog
+          if (os.system("tinydns-data") == -1):
+            print "ERROR: Unable to execute tinydns-data program"
+        
+        elif result == 0:
+          print "NO CHANGE: %s = %s" % (rq_hostname, addr[0])
         else:
-          print "FAILED: Authentication failed"
+          print "FAILED: Invalid hostname request '%s'" % rq_hostname
+        data_file.close()
       else:
-        # invalid hostname
-        print "FAILED: Invalid hostname request '%s'" % rq_hostname
+        print "FAILED: Authentication failed"
 
   else:
     # create and connect the socket
