@@ -19,7 +19,7 @@ To install the server code:
    (i.e. "ln $(pwd) /etc/service/" )
 5. An existing entry in the tinydns data file should already exist. 
    This script will NOT add one. Only those hosts listed 
-   (with prefixes '+=^'C') are able to update their entries.
+   (with prefixes '+' and '=') are able to update their entries.
 
 To install the client code:
 
