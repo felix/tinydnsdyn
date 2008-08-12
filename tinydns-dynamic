@@ -47,19 +47,21 @@ def main():
     password = args[0]
 
   def processDDNSRequest(address, hostname):
-    result = -1
+    result = 0
     try: data_tmp_file = open(data_tmp_path,"w")
     except: 
       print "ERROR: Unable to create temporary data file"
       exit(-1)
 
     for line in data_file:
-      host,old_ip,old_ttl = line.split(":",3)
+      print line
+      if line[0] not in ['+','=','^',"'",'C']:
+        data_tmp_file.write(line)
+        continue
+      host,old_ip,old_ttl = line.split(":",2)
       # i think these prefixes should all work?!
       if host.lstrip("+=^'C") == hostname:
-        if old_ip == address:
-          result = 0
-        else:
+        if old_ip != address:
           data_tmp_file.write("%s:%s:%s\n" % (host,address,options.ttl) )
           result = 1
       else:
