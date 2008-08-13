@@ -47,24 +47,23 @@ def main():
     password = args[0]
 
   def processDDNSRequest(address, hostname):
-    result = 0
+    result = -1
     try: data_tmp_file = open(data_tmp_path,"w")
     except: 
       print "ERROR: Unable to create temporary data file"
       exit(-1)
 
     for line in data_file:
-      if line[0] not in ['+','=']:
-        data_tmp_file.write(line)
-        continue
-      host,old_ip = line.split(":",1)
-      # i think these prefixes should work?!
-      if host.lstrip("+=") == hostname:
-        if old_ip != address:
-          data_tmp_file.write("%s:%s:%s\n" % (host,address,options.ttl) )
-          result = 1
-      else:
-        data_tmp_file.write(line)
+      if line[0] in ['+','=']:
+        fields = line.split(":",2)
+        # i think these prefixes should work?!
+        if fields[0].lstrip("+=") == hostname:
+          if fields[1] != address:
+            line = "%s:%s:%s\n" % (fields[0],address,options.ttl)
+            result = 1
+          else:
+            result = 0
+      data_tmp_file.write(line)
     data_tmp_file.close()
     return result
 
@@ -104,7 +103,7 @@ def main():
         elif result == 0:
           print "NO CHANGE: %s = %s" % (rq_hostname, addr[0])
         else:
-          print "FAILED: Invalid hostname request '%s'" % rq_hostname
+          print "FAILED: %s is an invalid hostname request" % rq_hostname
         data_file.close()
       else:
         print "FAILED: Authentication failed"

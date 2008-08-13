@@ -29,7 +29,7 @@ To install the client code:
    tinydns-dynamic --hostname=<myhostname> --remote-server=<mydnsserver> <password>
 
 3. The password must obviously be the same and the requested host name must
-   exist in the 'data' and 'dynamic' files.
+   exist in the 'data' file.
 
 
 I take no responsibility for anything that may happen to any of your machines.
