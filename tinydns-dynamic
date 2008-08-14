@@ -16,7 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301  USA
 
-
+import sys
 import os
 import shutil
 import socket
@@ -107,6 +107,7 @@ def main():
         data_file.close()
       else:
         print "FAILED: Authentication failed"
+      sys.stdout.flush()
 
   else:
     # create and connect the socket
