@@ -57,7 +57,7 @@ def main():
       if line[0] in ['+','=']:
         fields = line.split(":",2)
         # i think these prefixes should work?!
-        if fields[0].lstrip("+=") == hostname:
+        if fields[0].lstrip("+=.*") == hostname:
           if fields[1] != address:
             line = "%s:%s:%s\n" % (fields[0],address,options.ttl)
             result = 1
