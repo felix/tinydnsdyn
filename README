@@ -14,19 +14,30 @@ To install the server code:
 1. Copy script and all files onto your server ie. /etc/tinydns-dynamic/
 2. The supplied 'run' script is tailored for debian/ubuntu and may need to be
    changed. Also true for the 'log/run' script
-3. Ensure the password is updated in the 'run' file
+3. Create a password file that contains the password on the first line
 4. Symlink this directory into your svscan directory,
    (i.e. "ln $(pwd) /etc/service/" )
 5. An existing entry in the tinydns data file should already exist. 
    This script will NOT add one. Only those hosts listed 
    (with prefixes '+' and '=') are able to update their entries.
 
+    For example:
+
+   +groucho.example.com:192.168.0.2:3360
+   +groucho.example.com:192.168.0.2
+   =groucho.example.com:192.168.0.2:60
+   +*.groucho.example.com:192.168.0.2:60
+   +*.groucho.example.com:192.168.0.2
+ 
+   Will all get updated if the host groucho.example.com does a request.
+   
+
 To install the client code:
 
 1. Copy the 'tinydns-dynamic' script into your DNS client's path ie. /usr/local/bin/
 2. Arrange to periodically run the "tinydns-dynamic" program (via cron et al) as:
 
-   tinydns-dynamic --hostname=<myhostname> --remote-server=<mydnsserver> <password>
+   tinydns-dynamic --hostname=<myhostname> --remote-server=<mydnsserver> <passfile>
 
 3. The password must obviously be the same and the requested host name must
    exist in the 'data' file.

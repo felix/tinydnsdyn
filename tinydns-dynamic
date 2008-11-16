@@ -24,7 +24,7 @@ import hashlib
 from optparse import OptionParser
 
 def main():
-  usage = "usage: %prog [options] password"
+  usage = "usage: %prog --hostname <yourhost> --remote-server <dnsserver> [options] passfile"
   parser = OptionParser(usage=usage)
   parser.add_option("-s", "--server", action="store_true", dest="server",
       help="act as aserver, otherwise be a client")
@@ -41,10 +41,10 @@ def main():
   parser.set_defaults(data_dir="/var/services/tinydns/root", ddns_port=5300, ttl=60)
   (options, args) = parser.parse_args()
   if len(args) != 1:
-    parser.error("You need to supply a password")
+    parser.error("Incorrect number of parameters")
     exit(-1)
   else:
-    password = args[0]
+    password = open(args[0],"r").readline().strip()
 
   def processDDNSRequest(address, hostname):
     result = -1
@@ -67,7 +67,6 @@ def main():
     data_tmp_file.close()
     return result
 
-    
   def createHash(hostname):
     return hashlib.sha1("%s%s" % (hostname.strip(),password)).hexdigest()
 
