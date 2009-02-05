@@ -21,6 +21,17 @@ To install the server code:
    This script will NOT add one. Only those hosts listed 
    (with prefixes '+' and '=') are able to update their entries.
 
+    For example:
+
+   +groucho.example.com:192.168.0.2:3360
+   +groucho.example.com:192.168.0.2
+   =groucho.example.com:192.168.0.2:60
+   +*.groucho.example.com:192.168.0.2:60
+   +*.groucho.example.com:192.168.0.2
+ 
+   Will all get updated if the host groucho.example.com does a request.
+   
+
 To install the client code:
 
 1. Copy the 'tinydns-dynamic' script into your DNS client's path ie. /usr/local/bin/
