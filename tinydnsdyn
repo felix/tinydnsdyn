@@ -107,16 +107,16 @@ def main():
                 except:
                     print "ERROR: unable to overwrite data file"
                 # now run the tinydns-data prog
-                if (os.system("make") != 0):
+                if (os.system("make -s") != 0):
                     print "ERROR: problem executing Makefile"
 
             elif result == 0:
                 print "NO CHANGE: %s = %s" % (client_hostname, addr[0])
             else:
-                print "FAILED: invalid hostname request '%s'" % client_hostname
+                print "FAILED: client %s invalid hostname request '%s'" % (addr[0], client_hostname)
             datafile.close()
         else:
-            print "FAILED: Authentication failed"
+            print "FAILED: client %s authentication failed" % addr[0]
         clientsock.close()
         sys.stdout.flush()
 
