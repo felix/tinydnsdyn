@@ -1,0 +1,61 @@
+#!/usr/bin/python
+
+# Copyright 2009 Felix Hanley <felix@seconddrawer.com.au>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2, as 
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301  USA
+
+import sys
+import socket
+import hashlib
+from optparse import OptionParser
+
+def main():
+    usage = "usage: %prog --hostname <yourhost> --server <dnsserver> [options] passfile"
+    parser = OptionParser(usage=usage)
+    parser.add_option("-n", "--hostname", dest="hostname",
+            help="your desired DDNS hostname")
+    parser.add_option("-s", "--server", dest="server",
+            help="the DDNS server hostname")
+    parser.add_option("-p", "--port", dest="port",
+            help="the port to use")
+
+    # defaults
+    parser.set_defaults(port=5300)
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
+        parser.error("ERROR: you must provide a passfile")
+        exit(-1)
+
+    try: password = open(args[0],"r").readline().strip()
+    except:
+        print "ERROR: error opening passfile '%s'" % args[0]
+        exit(-1)
+
+
+    # create and connect the socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.connect((options.server,options.port))
+    # get auth key
+    key = sock.recv(1024)
+    # hash key and password
+    data = "%s|%s" % (options.hostname,
+            hashlib.sha1("%s%s" % (key,password)).hexdigest())
+    # send hostname, hash
+    sock.send(data)
+    sock.close()
+
+if __name__ == "__main__":
+    main()

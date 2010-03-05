@@ -1,0 +1,124 @@
+#!/usr/bin/python
+
+# Copyright 2009 Felix Hanley <felix@seconddrawer.com.au>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2, as 
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301  USA
+
+import sys
+import os
+import shutil
+import socket
+import hashlib
+import time
+from optparse import OptionParser
+
+def main():
+    usage = "usage: %prog [options] passfile"
+    parser = OptionParser(usage=usage)
+    parser.add_option("-d", "--data-dir", dest="data_dir",
+            help="absolute path to the tinydns data directory")
+    parser.add_option("-t", "--ttl", dest="ttl",
+            help="Time To Live")
+    parser.add_option("-p", "--port", dest="port",
+            help="the port to listen on")
+
+    # defaults
+    parser.set_defaults(data_dir="/var/services/tinydns/root", port=5300, ttl=60)
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
+        parser.error("ERROR: You must provide a passfile")
+        exit(-1)
+
+    # check some basics
+    try: password = open(args[0],"r").readline().strip()
+    except:
+        print "ERROR: error opening passfile '%s'" % args[0]
+        exit(-1)
+
+    def _update_datafile(address, hostname):
+        result = -1
+        try: tmpfile = open(tmpfile_path,"w")
+        except:
+            print "ERROR: unable to create temporary data file '%s'" % tmpfile_path
+            exit(-1)
+
+        for line in datafile:
+            if line[0] in ['+','=']:
+                fields = line.split(":",2)
+                # i think these prefixes should work?!
+                if fields[0].lstrip("+=.*") == hostname:
+                    if fields[1] != address:
+                        line = "%s:%s:%s\n" % (fields[0],address,options.ttl)
+                        result = 1
+                    else:
+                        result = 0
+            tmpfile.write(line)
+        tmpfile.close()
+        return result
+
+
+    # set up socket and listen
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(("",options.port))
+    sock.listen(2)
+    print "Server started on port", options.port
+
+    # this makes the data file ops easier
+    os.chdir(options.data_dir)
+    while 1:
+        # receive data from client, "hostname|hash"
+        (clientsock, addr) = sock.accept()
+        # create auth seed and send it
+        key = time.asctime()
+        clientsock.send(key)
+        # check returned hash and get hostname
+        data = clientsock.recv(1024)
+        client_hostname, client_hsh = data.split("|",1)
+        our_hsh = hashlib.sha1("%s%s" % (key,password)).hexdigest()
+
+        if client_hsh == our_hsh:
+            datafile_path = os.path.join(options.data_dir, "data")
+            tmpfile_path = os.path.join(options.data_dir, "data.tmp")
+            try: datafile = open(datafile_path,"r")
+            except:
+                print "ERROR: unable to open tinydns data file"
+                exit(-1)
+
+            # make the changes to the file
+            result = _update_datafile(addr[0],client_hostname)
+            if result == 1:
+                # now overwrite data file with temp one
+                try:
+                    shutil.move(tmpfile_path, datafile_path)
+                    print "CHANGED: %s = %s" % (client_hostname, addr[0])
+                except:
+                    print "ERROR: unable to overwrite data file"
+                # now run the tinydns-data prog
+                if (os.system("make") != 0):
+                    print "ERROR: problem executing Makefile"
+
+            elif result == 0:
+                print "NO CHANGE: %s = %s" % (client_hostname, addr[0])
+            else:
+                print "FAILED: invalid hostname request '%s'" % client_hostname
+            datafile.close()
+        else:
+            print "FAILED: Authentication failed"
+        clientsock.close()
+        sys.stdout.flush()
+
+if __name__ == "__main__":
+    main()
