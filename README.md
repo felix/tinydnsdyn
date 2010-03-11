@@ -1,14 +1,14 @@
 This is a basic dynamic client and server for the djbdns DNS 
 server 'tinydns' by Dan Bernstein.
 
-REQUIREMENTS:
+## Requirements:
 
-* Administrative access to a server running tinydns and hence
+- Administrative access to a server running tinydns and hence
   daemontools or similar
-* Administrative access to a *nix box on you local network
-* Python installed on both client and server
+- Administrative access to a \*nix box on you local network
+- Python installed on both client and server
 
-INSTALLATION
+## Installation
 
 To install the server code:
 
@@ -22,15 +22,15 @@ To install the server code:
    This script will NOT add one. Only those hosts listed 
    (with prefixes '+' and '=') are able to update their entries.
 
-    For example:
+For example:
 
-   +groucho.example.com:192.168.0.2:3360
-   +groucho.example.com:192.168.0.2
-   =groucho.example.com:192.168.0.2:60
-   +*.groucho.example.com:192.168.0.2:60
-   +*.groucho.example.com:192.168.0.2
- 
-   will all get updated if the host groucho.example.com does a request.
+    +groucho.example.com:192.168.0.2:3360
+    +groucho.example.com:192.168.0.2
+    =groucho.example.com:192.168.0.2:60
+    +*.groucho.example.com:192.168.0.2:60
+    +*.groucho.example.com:192.168.0.2
+
+will all get updated if the host groucho.example.com does a request.
    
 
 To install the client code:
@@ -40,13 +40,12 @@ To install the client code:
 2. Arrange to periodically run the 'tinydnsdyn-client' program (via
    cron et al) like so:
 
-   tinydnsdyn-client --hostname=<myhostname> --server=<mydnsserver> <passfile>
+       tinydnsdyn-client --hostname=<myhostname> --server=<mydnsserver> <passfile>
 
-   Only the passfile option is required.
+Only the passfile option is required.
 
 3. The password must obviously be the same and the requested host name
    must exist in the 'data' file.
-
 
 The Python code is basic and inefficient but it should work. I take no
 responsibility for anything that may happen to any of your machines.
