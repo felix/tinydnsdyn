@@ -40,7 +40,7 @@ To install the client code:
 2. Arrange to periodically run the 'tinydnsdyn-client' program (via
    cron et al) like so:
 
-       tinydnsdyn-client --hostname=<myhostname> --server=<mydnsserver> <passfile>
+         tinydnsdyn-client --hostname=<myhostname> --server=<mydnsserver> <passfile>
 
 Only the passfile option is required.
 
@@ -49,4 +49,4 @@ Only the passfile option is required.
 
 The Python code is basic and inefficient but it should work. I take no
 responsibility for anything that may happen to any of your machines.
-That said, please let me know if there are any issues.
+That said, please let me know if there are any issues by creating a ticket on [my tracker](http://support.seconddrawer.com/projects/tinydnsdyn/).
