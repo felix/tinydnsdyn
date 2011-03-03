@@ -87,7 +87,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.datafile.commit()
 
         self.end_headers()
-        print "client: %s, request: %s, status: %s" % (address, self.path, response)
+        print "client: %s, status: %s" % (address, response)
         self.wfile.write(response)
 
 
