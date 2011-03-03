@@ -87,8 +87,8 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.datafile.commit()
 
         self.end_headers()
-        sys.stdout.write("client: %s, status: %s" % (address, response))
         self.wfile.write(response)
+        sys.stderr.write("client: %s, status: %s\n" % (address, response))
 
 
 class Authorizer:
@@ -201,4 +201,4 @@ def main():
 if __name__ == "__main__":
     try: main()
     except Exception as strerror:
-        sys.stdout.write("tinydnsdyn: %s" % format(strerror))
+        sys.stderr.write("tinydnsdyn: %s" % format(strerror))
