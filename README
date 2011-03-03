@@ -6,7 +6,7 @@ REQUIREMENTS:
 * Administrative access to a server running tinydns and hence
   daemontools or similar
 * Administrative access to a *nix box on you local network
-* Python installed on both client and server
+* Python (version 2!) installed on both client and server
 * An open port on the server's firewall
 
 INSTALLATION

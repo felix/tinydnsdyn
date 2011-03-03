@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright 2011 Felix Hanley <felix@seconddrawer.com.au>
 #
@@ -184,7 +184,7 @@ def main():
             help="the address to bind to (default: all)")
     parser.add_option("-p", "--port", dest="port",
             help="the port to listen on (default: 5353)")
-    parser.add_option("-f", "--passfil", dest="passfile",
+    parser.add_option("-f", "--passfile", dest="passfile",
             help="the password file (default: htpasswd)")
 
     # defaults
