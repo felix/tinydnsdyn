@@ -18,7 +18,6 @@
 
 import sys
 import os
-import shutil
 import base64
 import crypt
 import urlparse
@@ -31,48 +30,65 @@ from optparse import OptionParser
 
 class RequestHandler(BaseHTTPRequestHandler):
 
-    def auth_headers(self):
+    def headers_auth(self):
         self.send_header('Content-type', 'text/html')
-        self.send_header('WWW-Authenticate', 'Basic realm=\"Test\"')
+        self.send_header('WWW-Authenticate', 'Basic realm=\"tinyDNSdyn\"')
 
-    def do_HEAD(self):
-        self.send_response(200)
-        self.auth_headers()
-        self.end_headers()
+    def headers_denied(self):
+        self.send_response(401)
+        self.headers_auth()
 
     def do_GET(self):
         self.auth = Authorizer()
         self.datafile = DataFile()
+        response = 'nohost'
+        hosts = []
+        address = self.client_address[0]
         auth_header= self.headers.getheader('Authorization')
-        if auth_header:
+        # get query string
+        path,_,query_str = self.path.partition('?')
+        query = urlparse.parse_qs(query_str)
+        # only accept index requests
+        if path != '/':
+            response = 'notfound'
+            self.send_response(404)
+        elif not auth_header:
+            self.headers_denied()
+            response = 'badauth'
+        else:
             passhash = auth_header.replace('Basic ','',1).strip()
             username,password = base64.b64decode(passhash).split(':',1)
-        query = urlparse.parse_qs(self.path.lstrip("/?"))
-
-        if 'myip' in query: address = query['myip']
-        else: address = self.client_address[0]
-
-        if auth_header:
-            for hostname in query['hostname'][0].split(','):
-                if self.auth.check(username, password, hostname):
-                    print "AUTH: success"
-                    # make the changes to the file
-                    result = self.datafile.update(address, hostname)
-                    if result == 1:
-                        print "CHANGED: %s = %s" % (hostname, address)
-                    elif result == 0:
-                        print "NO CHANGE: %s = %s" % (hostname, address)
-                    else:
-                        print "FAILED: client %s invalid hostname request '%s'" % (address, hostname)
+            if self.auth.check(username, password):
+                if 'hostname' not in query:
+                    response = 'notfqdn'
                 else:
-                    print "AUTH: failed"
+                    # use given ip address
+                    if 'myip' in query: address = query['myip'][0]
+                    # clean up all the hostnames
+                    for hostlist in query['hostname']:
+                        for hostname in hostlist.split(','):
+                            hosts.append(hostname)
+                    # update each hostname
+                    for hostname in hosts:
+                        if self.auth.check(username, password, hostname):
+                            # make the changes to the file
+                            result = self.datafile.update(address, hostname)
+                            if result == 1:
+                                response = 'good'
+                            elif result == 0:
+                                response = 'nochg'
+                # successful
+                self.send_response(200)
+
+            else:
+                self.headers_denied()
+                response = 'badauth'
+
             self.datafile.commit()
 
-        else:
-            self.send_response(401)
-            self.auth_headers()
-            self.end_headers()
-            print "AUTH: none"
+        self.end_headers()
+        print "client: %s, request: %s, status: %s" % (address, self.path, response)
+        self.wfile.write(response)
 
 
 class Authorizer:
@@ -87,13 +103,13 @@ class Authorizer:
                 entry = [x.strip() for x in line.split(':',2)]
                 self.entries.append(entry)
         else:
-            raise Exception("unable to find password file: %s" % self.filename)
+            raise IOError("unable to find password file: %s" % self.filename)
 
-    def check(self, username, password, fqdn):
+    def check(self, username, password, fqdn=None):
         for entry in self.entries:
             if entry[0] == username:
                 if entry[1] == crypt.crypt(password, entry[1]):
-                    if len(entry) == 2 or fqdn in entry[2].split(','):
+                    if fqdn == None or len(entry) == 2 or fqdn in entry[2].split(','):
                         return True
 
         return False
@@ -102,31 +118,38 @@ class Authorizer:
 class DataFile:
 
     def __init__(self):
+        self.changed = False
+        self.lines = []
         self.datafile_path = os.path.join(options.root, "data")
         self.tmpfile_path = os.path.join(options.root, "data.tinydnsdyn.tmp")
         if os.path.exists(self.datafile_path):
             try: self.datafile = open(self.datafile_path,"r")
             except:
-                raise Exception("unable to open tinydns data file: %s" %
+                raise IOError("unable to open tinydns data file: %s" %
                         self.datafile_path)
 
             try: self.tmpfile = open(self.tmpfile_path,"w")
             except:
-                raise Exception("unable to create temporary data file: %s" %
+                raise IOError("unable to create temporary data file: %s" %
                         tmpfile_path)
         else:
-            raise Exception("unable to find data file: %s" % self.datafile_path)
+            raise IOError("unable to find data file: %s" % self.datafile_path)
 
     def update(self, address, hostname):
         result = -1
         for line in self.datafile:
             if line[0] in ['+','=']:
                 fields = line.split(":",2)
+                if len(fields) > 2:
+                    ttl = fields[2]
+                else:
+                    ttl = options.ttl
                 # i think these prefixes should work?!
                 if fields[0].lstrip("+=.*") == hostname:
                     if fields[1] != address:
-                        line = "%s:%s:%s\n" % (fields[0],address,options.ttl)
+                        line = "%s:%s:%s\n" % (fields[0],address,ttl)
                         result = 1
+                        self.changed = True
                     else:
                         result = 0
             self.tmpfile.write(line)
@@ -135,13 +158,18 @@ class DataFile:
 
     def commit(self):
         # overwrite data file with temp one
-        try: shutil.move(self.tmpfile_path, self.datafile_path)
-        except:
-            raise Exception("unable to overwrite data file: %s" %
-                    self.datafile_path)
-        # now run the tinydns-data prog
-        if (os.system("cd %s && make -s" % options.root) != 0):
-            raise Exception("problem executing Makefile")
+        if self.changed:
+            try:
+                os.rename(self.tmpfile_path, self.datafile_path)
+            except:
+                raise IOError("unable to overwrite data file: %s" %
+                        self.datafile_path)
+            # now run the tinydns-data prog
+            errno = os.system("cd %s && make -s" % options.root)
+            if errno != 0:
+                raise EnvironmentError("problem executing Makefile")
+        else:
+            os.remove(self.tmpfile_path)
     
 
 def main():
