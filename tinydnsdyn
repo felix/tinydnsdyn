@@ -179,17 +179,17 @@ def main():
     parser.add_option("-r", "--root", dest="root",
             help="absolute path to the tinydns data directory")
     parser.add_option("-t", "--ttl", dest="ttl",
-            help="default Time To Live")
+            help="default TTL (default: 3600)")
     parser.add_option("-a", "--address", dest="address",
             help="the address to bind to (default: all)")
     parser.add_option("-p", "--port", dest="port",
-            help="the port to listen on (default: 8080)")
+            help="the port to listen on (default: 5353)")
     parser.add_option("-f", "--passfil", dest="passfile",
-            help="the password file (default: ./htpasswd)")
+            help="the password file (default: htpasswd)")
 
     # defaults
     parser.set_defaults(root="/var/services/tinydns/root", address='',
-            port=8080, ttl=60, passfile='htpasswd')
+            port=5353, ttl=3600, passfile='/var/services/tinydns/htpasswd')
     global options
     (options, args) = parser.parse_args()
 
