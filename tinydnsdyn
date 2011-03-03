@@ -87,7 +87,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.datafile.commit()
 
         self.end_headers()
-        print "client: %s, status: %s" % (address, response)
+        sys.stdout.write("client: %s, status: %s" % (address, response))
         self.wfile.write(response)
 
 
@@ -201,4 +201,4 @@ def main():
 if __name__ == "__main__":
     try: main()
     except Exception as strerror:
-        print "tinydnsdyn: %s" % format(strerror)
+        sys.stdout.write("tinydnsdyn: %s" % format(strerror))
