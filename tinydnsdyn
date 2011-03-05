@@ -39,6 +39,7 @@ class RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.auth = Authorizer()
         self.datafile = DataFile()
+
         response = 'nohost'
         hosts = []
         address = self.client_address[0]
@@ -95,13 +96,10 @@ class Authorizer:
     def __init__(self):
         self.filename = options.passfile
         self.entries = []
-        if os.path.exists(self.filename):
-            lines = open(self.filename, 'r').readlines()
-            for line in lines:
-                entry = [x.strip() for x in line.split(':',2)]
-                self.entries.append(entry)
-        else:
-            raise IOError("unable to find password file: %s" % self.filename)
+        lines = open(self.filename, 'r').readlines()
+        for line in lines:
+            entry = [x.strip() for x in line.split(':',2)]
+            self.entries.append(entry)
 
     def check(self, username, password, fqdn=None):
         for entry in self.entries:
@@ -121,18 +119,8 @@ class DataFile:
         self.lines = []
         self.datafile_path = os.path.join(options.root, options.data)
         self.tmpfile_path = os.path.join(options.root, "data.tinydnsdyn.tmp")
-        if os.path.exists(self.datafile_path):
-            try: self.datafile = open(self.datafile_path,"r")
-            except:
-                raise IOError("unable to open tinydns data file: %s" %
-                        self.datafile_path)
-
-            try: self.tmpfile = open(self.tmpfile_path,"w")
-            except:
-                raise IOError("unable to create temporary data file: %s" %
-                        tmpfile_path)
-        else:
-            raise IOError("unable to find data file: %s" % self.datafile_path)
+        self.datafile = open(self.datafile_path,"r")
+        self.tmpfile = open(self.tmpfile_path,"w")
 
     def update(self, address, hostname):
         """update the temporary data file"""
@@ -166,17 +154,15 @@ class DataFile:
     def commit(self):
         """overwrite data file with temp one"""
         if self.changed:
-            try: os.rename(self.tmpfile_path, self.datafile_path)
-            except: raise IOError("unable to overwrite data file: %s" %
-                    self.datafile_path)
+            os.rename(self.tmpfile_path, self.datafile_path)
             # now run the tinydns-data prog
             errno = os.system("cd %s && make -s" % options.root)
             if errno != 0:
-                raise EnvironmentError("problem executing Makefile")
-        else:
-            try: os.remove(self.tmpfile_path)
-            except: raise IOError("unable to remove temporary file: %s" %
-                    self.tmpfile_path)
+                raise RuntimeError("problem executing Makefile")
+
+    def __del__(self):
+        try: os.remove(self.tmpfile_path)
+        except: pass
     
 
 def main():
@@ -209,6 +195,4 @@ def main():
 
 
 if __name__ == "__main__":
-    try: main()
-    except Exception as strerror:
-        sys.stderr.write("tinydnsdyn: %s" % format(strerror))
+    main()
