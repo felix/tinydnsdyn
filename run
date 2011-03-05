@@ -1,3 +1,6 @@
 #!/bin/sh
 exec 2>&1
-exec envuidgid tinydns ./tinydnsdyn --root=/etc/tinydns/root --passfile=/etc/tinydns/root/tinydnsdyn.passwords
+exec envuidgid tinydns ./tinydnsdyn \
+    --root=/etc/tinydns/root \
+    --passfile=/etc/tinydns/root/tinydnsdyn.passwords \
+    --data=tinydnsdyn.data

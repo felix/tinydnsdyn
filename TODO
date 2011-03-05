@@ -1,0 +1,4 @@
+
+* Better sanity checking
+* Multithread the server. Need to find a way to gracefully handle the data file
+* Just better coding!

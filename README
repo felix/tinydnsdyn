@@ -18,17 +18,10 @@ To install the server code:
 2. The supplied 'run' script is tailored for debian/ubuntu and may
    need to be changed.
 
-3. Create a password file. This is of the format created by Apache's htpasswd
-   and consists of one user per line in the following format:
-
-  <username>:<crypted hash>:<optional list of domains>
-
-4. Start the service by symlinking this directory into your svscan directory
-   (i.e. "ln $(pwd) /etc/service/" ).
-
-5. An existing entry in the tinydns data file should already exist. This script
-   will NOT add one. Only those hosts listed (with prefixes '+' and
-   '=') are able to update their entries.
+3. You can added dynamic DNS entries to your main data file or alternatively use
+   a seperate file for dynamic entries. An existing entry in the tinydns data
+   file should already exist. This script will NOT add one. Only those hosts
+   listed (with prefixes '+' and '=') are able to update their entries.
 
     For example:
 
@@ -39,6 +32,22 @@ To install the server code:
    +*.groucho.example.com:192.168.0.2
 
    will all get updated if the host groucho.example.com does a request.
+
+4. Create a password file. This is of the format created by Apache's htpasswd
+   and consists of one user per line in the following format:
+
+  <username>:<crypted hash>:<optional list of domains>
+
+5. The script will run 'make' in the data directory. This enables you to
+   concatenate your data files and whatever else before they are compiled. For
+   instance, you may need to combine all your primary and seconary zones and
+   then add the dynamic hosts before compiling.
+
+   An example Makefile is included with some ideas.
+
+6. Start the service by symlinking this directory into your svscan directory
+   (i.e. "ln $(pwd) /etc/service/" ).
+
 
 The service operates over HTTP and should be reasonably close to the service
 operated by DynDns.com having the following request format:

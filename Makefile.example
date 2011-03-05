@@ -1,0 +1,13 @@
+all: remote
+
+remote: data.cdb
+	rsync -az -e ssh data.cdb  remote.example.com:/etc/tinydns/root/data.cdb
+
+data.cdb: data
+	/usr/bin/tinydns-data
+
+data: primary.data secondary.data tinydnsdyn.data
+	cat primary.data secondary.data tinydnsdyn.data | sort | uniq -u > data
+
+secondary.data:
+	# perhaps axfr from another server??

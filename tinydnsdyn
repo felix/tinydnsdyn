@@ -29,14 +29,12 @@ import threading
 from optparse import OptionParser
 
 class RequestHandler(BaseHTTPRequestHandler):
-
-    def headers_auth(self):
-        self.send_header('Content-type', 'text/html')
-        self.send_header('WWW-Authenticate', 'Basic realm=\"tinyDNSdyn\"')
+    """handle requests to BaseHTTPServer"""
 
     def headers_denied(self):
         self.send_response(401)
-        self.headers_auth()
+        self.send_header('Content-type', 'text/html')
+        self.send_header('WWW-Authenticate', 'Basic realm=\"tinyDNSdyn\"')
 
     def do_GET(self):
         self.auth = Authorizer()
@@ -62,7 +60,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if 'hostname' not in query:
                     response = 'notfqdn'
                 else:
-                    # use given ip address
+                    # use given ip address?
                     if 'myip' in query: address = query['myip'][0]
                     # clean up all the hostnames
                     for hostlist in query['hostname']:
@@ -92,7 +90,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 
 class Authorizer:
-    """A class for manipulating htpasswd files."""
+    """Authorise the user using htpasswd file"""
 
     def __init__(self):
         self.filename = options.passfile
@@ -116,11 +114,12 @@ class Authorizer:
 
 
 class DataFile:
+    """Read and write the data file"""
 
     def __init__(self):
         self.changed = False
         self.lines = []
-        self.datafile_path = os.path.join(options.root, "data")
+        self.datafile_path = os.path.join(options.root, options.data)
         self.tmpfile_path = os.path.join(options.root, "data.tinydnsdyn.tmp")
         if os.path.exists(self.datafile_path):
             try: self.datafile = open(self.datafile_path,"r")
@@ -136,18 +135,26 @@ class DataFile:
             raise IOError("unable to find data file: %s" % self.datafile_path)
 
     def update(self, address, hostname):
+        """update the temporary data file"""
+
         result = -1
         for line in self.datafile:
             if line[0] in ['+','=']:
-                fields = line.split(":",2)
-                if len(fields) > 2:
-                    ttl = fields[2]
-                else:
-                    ttl = options.ttl
+                fields = line.split(":",3)
                 # i think these prefixes should work?!
                 if fields[0].lstrip("+=.*") == hostname:
+                    # default ttl?
+                    if len(fields) > 2:
+                        tail = fields[2]
+                    else:
+                        tail = options.ttl
+
+                    # retain the tail
+                    if len(fields) > 3:
+                        tail += ':' + fields[3]
+
                     if fields[1] != address:
-                        line = "%s:%s:%s\n" % (fields[0],address,ttl)
+                        line = "%s:%s:%s\n" % (fields[0],address,tail)
                         result = 1
                         self.changed = True
                     else:
@@ -157,19 +164,19 @@ class DataFile:
         return result
 
     def commit(self):
-        # overwrite data file with temp one
+        """overwrite data file with temp one"""
         if self.changed:
-            try:
-                os.rename(self.tmpfile_path, self.datafile_path)
-            except:
-                raise IOError("unable to overwrite data file: %s" %
-                        self.datafile_path)
+            try: os.rename(self.tmpfile_path, self.datafile_path)
+            except: raise IOError("unable to overwrite data file: %s" %
+                    self.datafile_path)
             # now run the tinydns-data prog
             errno = os.system("cd %s && make -s" % options.root)
             if errno != 0:
                 raise EnvironmentError("problem executing Makefile")
         else:
-            os.remove(self.tmpfile_path)
+            try: os.remove(self.tmpfile_path)
+            except: raise IOError("unable to remove temporary file: %s" %
+                    self.tmpfile_path)
     
 
 def main():
@@ -178,6 +185,8 @@ def main():
     parser = OptionParser(usage=usage)
     parser.add_option("-r", "--root", dest="root",
             help="absolute path to the tinydns data directory")
+    parser.add_option("-d", "--data", dest="data",
+            help="data file to update, relative to root (default: tinydnsdyn.data)")
     parser.add_option("-t", "--ttl", dest="ttl",
             help="default TTL (default: 3600)")
     parser.add_option("-a", "--address", dest="address",
@@ -189,7 +198,8 @@ def main():
 
     # defaults
     parser.set_defaults(root="/var/services/tinydns/root", address='',
-            port=5353, ttl=3600, passfile='/var/services/tinydns/htpasswd')
+            data="tinydnsdyn.data", port=5353, ttl=3600,
+            passfile='/var/services/tinydns/htpasswd')
     global options
     (options, args) = parser.parse_args()
 
