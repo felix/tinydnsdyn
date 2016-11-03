@@ -3,7 +3,7 @@
 # Copyright 2011-2016 Felix Hanley <felix@userspace.com.au>
 #
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2, as 
+# it under the terms of the GNU General Public License version 2, as
 # published by the Free Software Foundation.
 #
 # This program is distributed in the hope that it will be useful,
@@ -21,11 +21,8 @@ import os
 import base64
 import crypt
 import urlparse
-import SimpleHTTPServer
-import SocketServer
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from SocketServer import ThreadingMixIn
-import threading
+import ssl
 from optparse import OptionParser
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -163,7 +160,7 @@ class DataFile:
     def __del__(self):
         try: os.remove(self.tmpfile_path)
         except: pass
-    
+
 
 def main():
 
@@ -181,16 +178,27 @@ def main():
             help="the port to listen on (default: 5353)")
     parser.add_option("-f", "--passfile", dest="passfile",
             help="the password file (default: htpasswd)")
+    parser.add_option("-c", "--certfile", dest="certfile",
+            help="the SSL certificate file")
+    parser.add_option("-k", "--keyfile", dest="keyfile",
+            help="the SSL key file")
 
     # defaults
-    parser.set_defaults(root="/var/services/tinydns/root", address='',
-            data="tinydnsdyn.data", port=5353, ttl=3600,
-            passfile='/var/services/tinydns/htpasswd')
+    parser.set_defaults(
+            root="/var/services/tinydns/root",
+            address='',
+            data="tinydnsdyn.data",
+            port=5353,
+            ttl=3600,
+            passfile='/var/services/tinydns/htpasswd'
+            )
     global options
     (options, args) = parser.parse_args()
 
 
     httpd = HTTPServer((options.address, options.port), RequestHandler)
+    if options.certfile and options.keyfile:
+        httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certfile, keyfile=keyfile, server_side=True)
     httpd.serve_forever()
 
 
