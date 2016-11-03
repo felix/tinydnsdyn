@@ -170,11 +170,11 @@ def main():
             help="absolute path to the tinydns data directory")
     parser.add_option("-d", "--data", dest="data",
             help="data file to update, relative to root (default: tinydnsdyn.data)")
-    parser.add_option("-t", "--ttl", dest="ttl",
+    parser.add_option("-t", "--ttl", type="int", dest="ttl",
             help="default TTL (default: 3600)")
     parser.add_option("-a", "--address", dest="address",
             help="the address to bind to (default: all)")
-    parser.add_option("-p", "--port", dest="port",
+    parser.add_option("-p", "--port", type="int", dest="port",
             help="the port to listen on (default: 5353)")
     parser.add_option("-f", "--passfile", dest="passfile",
             help="the password file (default: htpasswd)")
