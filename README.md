@@ -31,18 +31,18 @@ It should run on any Linux or BSD with Python installed.
 
    For example:
 
-       +groucho.example.com:192.168.0.2:3360
-       +groucho.example.com:192.168.0.2
-       =groucho.example.com:192.168.0.2:60
-       +*.groucho.example.com:192.168.0.2:60
-       +*.groucho.example.com:192.168.0.2
+        +groucho.example.com:192.168.0.2:3360
+        +groucho.example.com:192.168.0.2
+        =groucho.example.com:192.168.0.2:60
+        +*.groucho.example.com:192.168.0.2:60
+        +*.groucho.example.com:192.168.0.2
 
    will all get updated if the host groucho.example.com does a request.
 
 4. Create a password file. This is of the format created by Apache's htpasswd
    and consists of one user per line in the following format:
 
-      <username>:<crypted hash>:<optional list of domains>
+        <username>:<crypted hash>:<optional list of domains>
 
 5. The script will run 'make' in the data directory. This enables you to
    concatenate your data files and whatever else before they are compiled. For
