@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/local/bin/python
 
-# Copyright 2011-2016 Felix Hanley <felix@userspace.com.au>
+# Copyright 2011-2017 Felix Hanley <felix@userspace.com.au>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2, as
@@ -54,34 +54,34 @@ class RequestHandler(BaseHTTPRequestHandler):
         else:
             passhash = auth_header.replace('Basic ','',1).strip()
             username,password = base64.b64decode(passhash).split(':',1)
-            if self.auth.check(username, password):
-                if 'hostname' not in query:
-                    response = 'notfqdn'
-                else:
-                    # use given ip address?
-                    if 'myip' in query: address = query['myip'][0]
-                    # clean up all the hostnames
-                    for hostlist in query['hostname']:
-                        for hostname in hostlist.split(','):
-                            hosts.append(hostname)
-                    # update each hostname
-                    for hostname in hosts:
-                        if self.auth.check(username, password, hostname):
-                            # make the changes to the file
-                            result = self.datafile.update(address, hostname)
-                            if result == 1:
-                                response = 'good'
-                            elif result == 0:
-                                response = 'nochg'
-                # successful
-                self.send_response(200)
-
-            else:
+            if not self.auth.check(username, password):
                 self.headers_denied()
                 response = 'badauth'
+            else if 'hostname' not in query:
+                self.send_response(406)
+                response = 'notfqdn'
+            else:
+                # use given ip address?
+                if 'myip' in query: address = query['myip'][0]
+                # clean up all the hostnames
+                for hostlist in query['hostname']:
+                    for hostname in hostlist.split(','):
+                        hosts.append(hostname)
+                # update each hostname
+                for hostname in hosts:
+                    if not self.auth.check(username, password, hostname):
+                        self.headers_denied()
+                        response = 'badauth'
+                        break
+                    else:
+                        # make the changes to the file
+                        if self.datafile.update(address, hostname):
+                            response = 'good'
+                        else:
+                            response = 'nochg'
+                self.send_response(200)
 
-            self.datafile.commit()
-
+        self.datafile.commit()
         self.end_headers()
         self.wfile.write(response)
         sys.stderr.write("client: %s, status: %s\n" % (address, response))
@@ -102,7 +102,7 @@ class Authorizer:
         for entry in self.entries:
             if entry[0] == username:
                 if entry[1] == crypt.crypt(password, entry[1]):
-                    if fqdn == None or len(entry) == 2 or fqdn in entry[2].split(','):
+                    if not fqdn or len(entry) == 2 or fqdn in entry[2].split(','):
                         return True
 
         return False
@@ -122,7 +122,6 @@ class DataFile:
     def update(self, address, hostname):
         """update the temporary data file"""
 
-        result = -1
         for line in self.datafile:
             if line[0] in ['+','=']:
                 fields = line.split(":",3)
@@ -140,13 +139,10 @@ class DataFile:
 
                     if fields[1] != address:
                         line = "%s:%s:%s\n" % (fields[0],address,tail)
-                        result = 1
                         self.changed = True
-                    else:
-                        result = 0
             self.tmpfile.write(line)
         self.tmpfile.close()
-        return result
+        return self.changed
 
     def commit(self):
         """overwrite data file with temp one"""
