@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 
 # Copyright 2011-2016 Felix Hanley <felix@userspace.com.au>
 #
@@ -198,7 +198,10 @@ def main():
 
     httpd = HTTPServer((options.address, options.port), RequestHandler)
     if options.certfile and options.keyfile:
-        httpd.socket = ssl.wrap_socket(httpd.socket, certfile=certfile, keyfile=keyfile, server_side=True)
+        context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        context.load_cert_chain(options.certfile, options.keyfile)
+        httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
+
     httpd.serve_forever()
 
 

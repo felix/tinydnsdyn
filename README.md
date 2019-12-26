@@ -9,10 +9,10 @@ It should run on any Linux or BSD with Python installed.
 ## Requirements
 
 * Administrative access to a server running tinydns and hence
-  daemontools or similar (such as runit in Void linux)
-* Administrative access to a *nix box on you local network
-* Python (version 2!) installed on both client and server
-* An open port on the server's firewall
+  daemontools or similar (such as runit in Void linux).
+* Administrative access to a *nix box on you local network.
+* Python (>2.7.9) installed on both client and server.
+* An open port on the server's firewall.
 
 ## Installation
 
